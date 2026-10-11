@@ -1,13 +1,23 @@
 """
-Minimal PayHero (legacy Swift Payment API) client.
+PayHero v2 Developer API client.
 
-Auth: HTTP Basic Auth with PAYHERO_USERNAME / PAYHERO_PASSWORD from settings.
+Auth: HTTP Basic Auth (base64-encoded username:password), sent as
+      Authorization: Basic <token>
+Endpoint: POST /api/v2/payments/initiate-stk-push
+Payload: amount, phone_number, channel_id, provider, external_reference
+
+Public API:
+    client = PayHeroClient()
+    resp = client.stk_push(
+        amount_kes=Decimal("3500"),
+        phone="254712345678",
+        reference="INV-2026-0001",
+        callback_url="https://yourdomain.com/payments/payhero/callback/",
+    )
 """
 
-import base64
 import logging
-from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
-from typing import Any
+from decimal import Decimal
 
 import requests
 from django.conf import settings
@@ -16,34 +26,21 @@ logger = logging.getLogger(__name__)
 
 
 class PayHeroError(Exception):
-    """Raised for PayHero configuration problems."""
+    """Raised for configuration or transport problems."""
 
 
 class PayHeroClient:
     def __init__(self):
-        self.username = getattr(settings, "PAYHERO_USERNAME", "") or ""
-        self.password = getattr(settings, "PAYHERO_PASSWORD", "") or ""
-        self.account_id = getattr(settings, "PAYHERO_ACCOUNT_ID", "") or ""
-        self.stk_url = getattr(
-            settings,
-            "PAYHERO_STK_URL",
-            "https://payherokenya.com/sps/portal/app/stk.php",
-        )
-
-    def _basic_auth_header(self) -> str:
-        if not self.username or not self.password:
-            raise PayHeroError(
-                "PAYHERO_USERNAME / PAYHERO_PASSWORD are not configured in .env"
-            )
-        token = base64.b64encode(
-            f"{self.username}:{self.password}".encode("utf-8")
-        ).decode("ascii")
-        return f"Basic {token}"
+        self.api_url = getattr(settings, "PAYHERO_API_URL", "") or ""
+        self.basic_auth = getattr(settings, "PAYHERO_BASIC_AUTH", "") or ""
+        self.channel_id = getattr(settings, "PAYHERO_CHANNEL_ID", "") or ""
 
     @staticmethod
     def normalize_phone(phone: str) -> str:
-        """Normalize common Kenyan phone formats to 2547XXXXXXXX / 2541XXXXXXXX."""
-        digits = "".join(character for character in str(phone) if character.isdigit())
+        """
+        Normalize Kenyan phone numbers to 2547XXXXXXXX / 2541XXXXXXXX.
+        """
+        digits = "".join(ch for ch in str(phone) if ch.isdigit())
 
         if digits.startswith("254") and len(digits) == 12:
             return digits
@@ -53,124 +50,85 @@ class PayHeroClient:
             return "254" + digits
         if digits.startswith("254") and len(digits) > 12:
             return digits[:12]
-
         return digits
 
     def stk_push(
         self,
-        amount_kes: Decimal,
+        amount_kes,
         phone: str,
         reference: str,
         description: str = "",
-    ) -> dict[str, Any]:
-        """Initiate an STK push and return the provider response in a dict."""
-        try:
-            amount = Decimal(str(amount_kes))
-            if not amount.is_finite():
-                raise InvalidOperation
-            amount = amount.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
-        except (InvalidOperation, TypeError, ValueError):
-            return {
-                "success": False,
-                "error": "Amount must be a valid number greater than zero",
-                "reference": reference,
-            }
+        callback_url: str = "",
+    ) -> dict:
+        """
+        Initiate an STK push via the v2 Developer API.
+
+        Returns a dict: {"success": bool, "raw": <server response>, "error": str}
+        Never raises for HTTP/transport errors — always returns a dict.
+        """
+        amount = int(Decimal(str(amount_kes)).quantize(Decimal("1")))
 
         if amount <= 0:
-            return {
-                "success": False,
-                "error": "Amount must be greater than zero",
-                "reference": reference,
-            }
+            return {"success": False, "error": "Amount must be greater than zero"}
 
-        if not self.account_id:
-            return {
-                "success": False,
-                "error": "PAYHERO_ACCOUNT_ID is not configured in .env",
-                "reference": reference,
-            }
+        if not self.basic_auth:
+            return {"success": False, "error": "PAYHERO_BASIC_AUTH is not configured"}
+        if not self.channel_id:
+            return {"success": False, "error": "PAYHERO_CHANNEL_ID is not configured"}
 
-        normalized_phone = self.normalize_phone(phone)
-        if len(normalized_phone) != 12:
-            return {
-                "success": False,
-                "error": f"Invalid phone number format: {normalized_phone}",
-                "reference": reference,
-            }
+        phone = self.normalize_phone(phone)
+        if len(phone) != 12:
+            return {"success": False, "error": f"Invalid phone number format: {phone}"}
 
-        try:
-            headers = {
-                "Authorization": self._basic_auth_header(),
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-            }
-        except PayHeroError as error:
-            return {
-                "success": False,
-                "error": str(error),
-                "reference": reference,
-            }
-
-        payload = {
-            "account_id": self.account_id,
-            "amount": int(amount),
-            "phone": normalized_phone,
-            "reference": reference,
-            "description": description or reference,
+        headers = {
+            "Authorization": self.basic_auth,
+            "Content-Type": "application/json",
         }
 
+        payload = {
+            "amount": amount,
+            "phone_number": phone,
+            "channel_id": self.channel_id,
+            "provider": "m-pesa",
+            "external_reference": reference,
+        }
+        if callback_url:
+            payload["callback_url"] = callback_url
+
         try:
-            response = requests.post(
-                self.stk_url,
-                json=payload,
-                headers=headers,
-                timeout=15,
+            resp = requests.post(
+                self.api_url, json=payload, headers=headers, timeout=15
             )
-        except requests.RequestException as error:
-            logger.exception("PayHero STK push transport error")
-            return {
-                "success": False,
-                "error": f"Network error: {error}",
-                "reference": reference,
-                "phone": normalized_phone,
-                "amount": int(amount),
-            }
+        except requests.RequestException as e:
+            logger.exception("PayHero v2 STK push transport error")
+            return {"success": False, "error": f"Network error: {e}"}
 
         try:
-            body = response.json()
+            body = resp.json()
         except ValueError:
-            body = {"raw_text": response.text}
+            body = {"raw_text": resp.text}
 
-        top_status = body.get("status") if isinstance(body, dict) else None
-        inner = body.get("response", {}) if isinstance(body, dict) else {}
-        inner_status = (
-            str(inner.get("Status", "")).lower()
-            if isinstance(inner, dict)
-            else ""
-        )
-
+        # v2 success responses look like:
+        # {"success": true, "status": "QUEUED", "reference": "...", ...}
         success = (
-            response.status_code == 200
+            resp.status_code in (200, 201)
             and isinstance(body, dict)
             and (
-                top_status is True
-                or str(top_status).lower() in {"success", "ok", "200"}
-                or inner_status in {"success", "ok"}
+                body.get("success") is True
+                or str(body.get("status", "")).upper() in {"QUEUED", "SUCCESS", "OK"}
             )
-        )
-
-        error_message = None if success else (
-            (inner.get("Message") if isinstance(inner, dict) else None)
-            or (body.get("message") if isinstance(body, dict) else None)
-            or f"HTTP {response.status_code}"
         )
 
         return {
             "success": success,
             "raw": body,
-            "http_status": response.status_code,
+            "http_status": resp.status_code,
             "reference": reference,
-            "phone": normalized_phone,
-            "amount": int(amount),
-            "error": error_message,
+            "phone": phone,
+            "amount": amount,
+            "error": None if success else (
+                (body.get("message") if isinstance(body, dict) else None)
+                or (body.get("detail") if isinstance(body, dict) else None)
+                or f"HTTP {resp.status_code}"
+            ),
         }

@@ -11,6 +11,7 @@ from django.db import transaction
 from django.db.models import Sum, Count, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.utils import timezone
@@ -614,11 +615,16 @@ def pay_invoice(request, invoice_id):
             status=Payment.Status.INITIATED,
         )
 
+    callback_url = request.build_absolute_uri(
+        reverse("dashboard:payhero_callback")
+    )
+
     result = PayHeroClient().stk_push(
         amount_kes=amount_kes,
         phone=phone,
         reference=invoice.number,
         description=f"Payment for {invoice.number}",
+        callback_url=callback_url,
     )
 
     payment.request_payload = {

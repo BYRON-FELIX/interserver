@@ -1,0 +1,40 @@
+services:
+  - type: web
+    name: interserver-clone
+    runtime: python
+    plan: free
+    buildCommand: "bash build.sh"
+    startCommand: "cd backend && python manage.py migrate --noinput && gunicorn core.wsgi:application --bind 0.0.0.0:$PORT"
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DJANGO_ALLOWED_HOSTS
+        value: ".onrender.com,localhost,127.0.0.1"
+      - key: PYTHON_VERSION
+        value: "3.12.6"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: interserver-db
+          property: connectionString
+      - key: PAYHERO_USERNAME
+        sync: false
+      - key: PAYHERO_PASSWORD
+        sync: false
+      - key: PAYHERO_ACCOUNT_ID
+        sync: false
+      - key: PAYHERO_STK_URL
+        value: "https://payherokenya.com/sps/portal/app/stk.php"
+      - key: EXCHANGE_RATE_API_KEY
+        sync: false
+      - key: EXCHANGE_RATE_FALLBACK_KES_PER_USD
+        value: "130.00"
+      - key: CREDENTIALS_ENCRYPTION_KEY
+        sync: false
+
+databases:
+  - name: interserver-db
+    plan: free
+    databaseName: interserver
+    user: interserver

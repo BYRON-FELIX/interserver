@@ -1,0 +1,236 @@
+{% extends "dashboard/base_public.html" %}
+{% load static %}
+
+{% block title %}Invoice {{ invoice.number }} — InterServer{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+    <div class="public-container">
+        <span class="hero-eyebrow">Invoice</span>
+        <h1 class="page-hero-title">{{ invoice.number }}</h1>
+        <p class="page-hero-sub">
+            Issued {{ invoice.issued_on|date:"d M, Y" }}
+            {% if invoice.due_on %} · Due {{ invoice.due_on|date:"d M, Y" }}{% endif %}
+        </p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="public-container">
+
+        {% if messages %}
+            {% for m in messages %}
+                <div class="flash flash-{{ m.tags }}">{{ m }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="invoice-card">
+            <div class="invoice-head">
+                <div>
+                    <div class="invoice-label">Billed to</div>
+                    <div class="invoice-billto">
+                        {% if invoice.owner.get_full_name %}
+                            {{ invoice.owner.get_full_name }}
+                        {% else %}
+                            {{ invoice.owner.username }}
+                        {% endif %}
+                    </div>
+                    <div class="invoice-billto-sub">{{ invoice.owner.email }}</div>
+                </div>
+
+                <div class="invoice-status-wrap">
+                    <span class="status-badge status-{{ invoice.status|lower }}">
+                        {{ invoice.get_status_display }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="invoice-lines">
+                <div class="invoice-line-head">
+                    <span>Description</span>
+                    <span>Amount</span>
+                </div>
+
+                <div class="invoice-line">
+                    <span>Services purchased</span>
+                    <span>${{ invoice.amount|floatformat:2 }}</span>
+                </div>
+
+                {% if invoice.kes_amount %}
+                <div class="invoice-line">
+                    <span>Amount in KSh (locked at order time)</span>
+                    <span>KSh {{ invoice.kes_amount|floatformat:2 }}</span>
+                </div>
+                {% endif %}
+
+                <div class="invoice-line invoice-line-total">
+                    <span>Total</span>
+                    <span>${{ invoice.amount|floatformat:2 }}</span>
+                </div>
+            </div>
+
+            {% if invoice.status == "unpaid" %}
+            <div class="invoice-pay">
+                <h3 class="pay-title">Pay with M-Pesa</h3>
+                <p class="pay-sub">
+                    Enter the M-Pesa number you want to pay from. You'll receive
+                    an STK push prompt — enter your PIN to complete.
+                </p>
+
+                <form method="post"
+                      action="{% url 'dashboard:pay_invoice' invoice.id %}"
+                      class="pay-form"
+                      id="payForm"
+                      data-status-url="{% url 'dashboard:invoice_payment_status' invoice.id %}">
+                    {% csrf_token %}
+                    <input
+                        type="tel"
+                        name="phone"
+                        id="payPhone"
+                        class="pay-input"
+                        placeholder="07XX XXX XXX"
+                        autocomplete="tel"
+                        inputmode="tel"
+                        required
+                    >
+                    <button type="submit" class="btn-primary btn-lg" id="payBtn">
+                        {% if invoice.kes_amount %}
+                            Pay KSh {{ invoice.kes_amount|floatformat:2 }}
+                        {% else %}
+                            Pay invoice
+                        {% endif %}
+                    </button>
+                </form>
+
+                <div class="pay-status" id="payStatus" style="display:none;" aria-live="polite">
+                    <div class="pay-spinner" id="paySpinner" aria-hidden="true"></div>
+                    <div class="pay-status-text" id="payStatusText">
+                        Waiting for you to enter your M-Pesa PIN...
+                    </div>
+                </div>
+
+                <a href="{% url 'dashboard:invoice_list' %}" class="link-back">
+                    ← Back to invoices
+                </a>
+            </div>
+            {% else %}
+            <div class="invoice-actions">
+                <div class="paid-note">
+                    ✓ Paid on {{ invoice.paid_on|date:"d M, Y"|default:"—" }}
+                </div>
+                <a href="{% url 'dashboard:invoice_receipt' invoice.id %}"
+                   class="btn-primary" style="margin-top:8px;">
+                    View Receipt
+                </a>
+                <a href="{% url 'dashboard:invoice_list' %}" class="link-back">
+                    View all invoices
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+{% if invoice.status == "unpaid" %}
+<script>
+(function () {
+    const statusElement = document.getElementById("payStatus");
+    const statusText = document.getElementById("payStatusText");
+    const spinner = document.getElementById("paySpinner");
+    const payButton = document.getElementById("payBtn");
+    const form = document.getElementById("payForm");
+    const statusUrl = "{% url 'dashboard:invoice_payment_status' invoice.id %}";
+    const initialPaymentStatus = "{{ latest_payment.status|default:'' }}";
+    const waitLimitMs = 20000;
+    const pollIntervalMs = 2000;
+
+    if (initialPaymentStatus === "pending" || initialPaymentStatus === "initiated") {
+        statusElement.style.display = "flex";
+        spinner.style.display = "block";
+        statusText.textContent = "Waiting for your M-Pesa payment confirmation...";
+        if (payButton) {
+            payButton.disabled = true;
+            payButton.textContent = "Waiting for M-Pesa...";
+        }
+        startPolling();
+    }
+
+    if (form) {
+        form.addEventListener("submit", function () {
+            statusElement.style.display = "flex";
+            spinner.style.display = "block";
+            statusText.textContent = "Sending payment request...";
+            if (payButton) {
+                payButton.disabled = true;
+                payButton.textContent = "Sending...";
+            }
+        });
+    }
+
+    function startPolling() {
+        let polling = true;
+        let pollTimer;
+        const deadlineTimer = window.setTimeout(function () {
+            stopWaiting(
+                "No payment confirmation received within 20 seconds. Check your phone; the original request may still complete. Try again only if it did not."
+            );
+        }, waitLimitMs);
+
+        function stopWaiting(message) {
+            polling = false;
+            window.clearTimeout(deadlineTimer);
+            window.clearTimeout(pollTimer);
+            spinner.style.display = "none";
+            statusText.textContent = message;
+            statusElement.style.display = "flex";
+            if (payButton) {
+                payButton.disabled = false;
+                payButton.textContent = "Try Again";
+            }
+        }
+
+        async function checkStatus() {
+            if (!polling) return;
+            try {
+                const response = await fetch(statusUrl, { credentials: "same-origin" });
+                if (!response.ok) throw new Error("Status check failed");
+                const status = await response.json();
+                if (!polling) return;
+                if (status.invoice_paid) {
+                    polling = false;
+                    window.clearTimeout(deadlineTimer);
+                    window.clearTimeout(pollTimer);
+                    statusText.textContent = "Payment received! Reloading...";
+                    window.setTimeout(function () {
+                        window.location.reload();
+                    }, 800);
+                    return;
+                }
+
+                if (["failed", "cancelled", "timeout"].includes(status.payment_status)) {
+                    stopWaiting(
+                        "Payment was not completed. " +
+                        (status.payment_error || "You can try again.")
+                    );
+                    return;
+                }
+            } catch (error) {
+                if (!polling) return;
+            }
+
+            if (polling) {
+                pollTimer = window.setTimeout(checkStatus, pollIntervalMs);
+            }
+        }
+
+        checkStatus();
+    }
+}());
+</script>
+{% endif %}
+{% endblock %}

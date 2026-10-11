@@ -1,0 +1,108 @@
+{% extends "dashboard/base_public.html" %}
+{% load static %}
+
+{% block title %}Domains — InterServer{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+    <div class="public-container">
+        <span class="hero-eyebrow">Domains</span>
+        <h1 class="page-hero-title">Find your perfect domain</h1>
+        <p class="page-hero-sub">
+            Search availability, register in seconds, and manage DNS from your
+            dashboard.
+        </p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="public-container">
+        <form method="get" class="domain-search">
+            <input
+                type="text"
+                name="domain"
+                class="domain-search-input"
+                placeholder="Find your new domain — e.g. mybusiness.com"
+                value="{{ request.GET.domain }}"
+                autofocus
+            >
+            <button type="submit" class="btn-primary btn-lg">Search</button>
+        </form>
+
+        {% if search_result %}
+            <div class="search-result {% if search_result.available %}sr-available{% else %}sr-taken{% endif %}">
+                <div class="sr-name">{{ search_result.query }}</div>
+                <div class="sr-status">
+                    {% if search_result.available %}
+                        <span class="sr-badge sr-badge-ok">Available</span>
+                        <span class="sr-msg">Great choice — grab it before someone else does.</span>
+                    {% else %}
+                        <span class="sr-badge sr-badge-no">Not available</span>
+                        <span class="sr-msg">Try a different name or a different extension.</span>
+                    {% endif %}
+                </div>
+                {% if search_result.available %}
+                    <button class="btn-primary">Register Now</button>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<section class="section section-alt">
+    <div class="public-container">
+        <div class="section-head">
+            <h2 class="section-title">Domain extensions</h2>
+            <p class="section-sub">Register the perfect TLD for your brand.</p>
+        </div>
+
+        <div class="tld-grid">
+            {% for plan in tlds %}
+                <div class="tld-card {% if plan.is_featured %}tld-featured{% endif %}">
+                    <div class="tld-name">{{ plan.name }}</div>
+                    <div class="tld-price">
+                        <span class="tld-amount">${{ plan.price|floatformat:2 }}</span>
+                        <span class="tld-period">/{{ plan.get_billing_period_display|lower }}</span>
+                    </div>
+                    <div class="tld-tagline">{{ plan.tagline }}</div>
+                    <a href="#search" class="tld-cta">Search</a>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="public-container">
+        <div class="section-head section-head-center">
+            <h2 class="section-title">Everything you need</h2>
+            <p class="section-sub">Domain management, made easy.</p>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature">
+                <div class="feature-icon">🛡</div>
+                <h3>Free WHOIS Privacy</h3>
+                <p>Your personal information stays private.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🔀</div>
+                <h3>Full DNS Control</h3>
+                <p>A, CNAME, MX, TXT — all at your fingertips.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🔁</div>
+                <h3>Auto-Renewal</h3>
+                <p>Never lose your domain to an expired card.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🔒</div>
+                <h3>Domain Locking</h3>
+                <p>Prevent unauthorized transfers by default.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

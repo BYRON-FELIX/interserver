@@ -1,0 +1,127 @@
+{% extends "dashboard/base_public.html" %}
+{% load static %}
+
+{% block title %}InterServer — Web Hosting, VPS & Domains{% endblock %}
+
+{% block content %}
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+    <div class="public-container hero-inner">
+        <div class="hero-copy">
+            <span class="hero-eyebrow">Trusted since 1999</span>
+            <h1 class="hero-title">
+                Fast, reliable hosting <br>for every project.
+            </h1>
+            <p class="hero-sub">
+                From a single WordPress site to a full cloud deployment —
+                we've got the infrastructure, the support, and the price.
+            </p>
+
+            <div class="hero-cta">
+                <a href="{% url 'dashboard:hosting' %}" class="btn-primary btn-lg">
+                    Get Started
+                </a>
+                <a href="{% url 'dashboard:vps' %}" class="btn-outline btn-lg">
+                    Explore VPS
+                </a>
+            </div>
+
+            <div class="hero-trust">
+                <div class="trust-item"><span class="trust-num">99.9%</span><span class="trust-lbl">Uptime</span></div>
+                <div class="trust-item"><span class="trust-num">24/7</span><span class="trust-lbl">Support</span></div>
+                <div class="trust-item"><span class="trust-num">25+</span><span class="trust-lbl">Years</span></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ FEATURED HOSTING ============ -->
+<section class="section">
+    <div class="public-container">
+        <div class="section-head">
+            <h2 class="section-title">Shared Hosting</h2>
+            <p class="section-sub">The easiest way to get a website online.</p>
+        </div>
+
+        <div class="plan-grid">
+            {% for plan in featured_hosting %}
+                {% include "dashboard/_plan_card.html" with plan=plan %}
+            {% endfor %}
+        </div>
+
+        <div class="section-more">
+            <a href="{% url 'dashboard:hosting' %}" class="link-arrow">
+                See all hosting plans →
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- ============ FEATURED VPS ============ -->
+<section class="section section-alt">
+    <div class="public-container">
+        <div class="section-head">
+            <h2 class="section-title">VPS Hosting</h2>
+            <p class="section-sub">Full root access and dedicated resources.</p>
+        </div>
+
+        <div class="plan-grid">
+            {% for plan in featured_vps %}
+                {% include "dashboard/_plan_card.html" with plan=plan %}
+            {% endfor %}
+        </div>
+
+        <div class="section-more">
+            <a href="{% url 'dashboard:vps' %}" class="link-arrow">
+                See all VPS plans →
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- ============ FEATURES ============ -->
+<section class="section">
+    <div class="public-container">
+        <div class="section-head section-head-center">
+            <h2 class="section-title">Why InterServer</h2>
+            <p class="section-sub">Everything you need. Nothing you don't.</p>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature">
+                <div class="feature-icon">⚡</div>
+                <h3>Fast NVMe Storage</h3>
+                <p>Every plan runs on NVMe SSDs for maximum speed.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🛡</div>
+                <h3>Free DDoS Protection</h3>
+                <p>Enterprise-grade mitigation on every service.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">💬</div>
+                <h3>24/7 Support</h3>
+                <p>Real humans, ready to help — day or night.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🔒</div>
+                <h3>Free SSL Certificates</h3>
+                <p>Automatic HTTPS on all your sites, forever.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ FINAL CTA ============ -->
+<section class="cta-banner">
+    <div class="public-container cta-inner">
+        <h2>Ready to launch?</h2>
+        <p>Pick a plan and go live in minutes.</p>
+        <a href="{% url 'dashboard:hosting' %}" class="btn-primary btn-lg">
+            Get Started
+        </a>
+    </div>
+</section>
+
+{% endblock %}

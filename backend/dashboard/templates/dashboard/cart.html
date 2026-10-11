@@ -1,0 +1,91 @@
+{% extends "dashboard/base_public.html" %}
+{% load static %}
+
+{% block title %}Your Cart — InterServer{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+    <div class="public-container">
+        <span class="hero-eyebrow">Cart</span>
+        <h1 class="page-hero-title">Review your order</h1>
+        <p class="page-hero-sub">
+            Confirm your items before proceeding to checkout.
+        </p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="public-container">
+
+        {% if messages %}
+            {% for m in messages %}
+                <div class="flash flash-{{ m.tags }}">{{ m }}</div>
+            {% endfor %}
+        {% endif %}
+
+        {% if cart_items %}
+            <div class="cart-layout">
+
+                <div class="cart-items">
+                    {% for item in cart_items %}
+                    <div class="cart-row">
+                        <div class="cart-row-main">
+                            <div class="cart-kind">{{ item.plan.get_category_display }}</div>
+                            <div class="cart-name">{{ item.plan.name }}</div>
+                            <div class="cart-tagline">{{ item.plan.tagline }}</div>
+                        </div>
+
+                        <div class="cart-row-price">
+                            <div class="cart-unit">${{ item.plan.price|floatformat:2 }}</div>
+                            <div class="cart-period">/{{ item.period }}</div>
+                        </div>
+
+                        <form method="post"
+                              action="{% url 'dashboard:remove_from_cart' item.plan.id %}"
+                              class="cart-row-remove">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-remove" title="Remove">✕</button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <aside class="cart-summary">
+                    <h3 class="summary-title">Order Summary</h3>
+
+                    <div class="summary-line">
+                        <span>Items</span>
+                        <span>{{ cart_items|length }}</span>
+                    </div>
+
+                    <div class="summary-line summary-total">
+                        <span>Total</span>
+                        <span>${{ cart_total|floatformat:2 }}</span>
+                    </div>
+
+                    <a href="{% url 'dashboard:checkout' %}" class="btn-primary btn-block">
+                        Proceed to Checkout
+                    </a>
+
+                    <a href="{% url 'dashboard:hosting' %}" class="link-back">
+                        ← Continue shopping
+                    </a>
+                </aside>
+
+            </div>
+        {% else %}
+            <div class="empty-panel">
+                <div class="empty-icon-lg">🛒</div>
+                <h2 class="empty-title">Your cart is empty</h2>
+                <p class="empty-sub">Pick a plan to get started.</p>
+                <a href="{% url 'dashboard:hosting' %}" class="btn-primary">
+                    Browse Hosting Plans
+                </a>
+            </div>
+        {% endif %}
+
+    </div>
+</section>
+
+{% endblock %}

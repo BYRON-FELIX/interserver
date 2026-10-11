@@ -1,0 +1,118 @@
+{% extends "dashboard/base_public.html" %}
+
+{% block title %}{{ service.name }} — InterServer{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="public-container">
+        <span class="hero-eyebrow">Domain</span>
+        <h1 class="page-hero-title">{{ service.name }}</h1>
+        <p class="page-hero-sub">
+            <span class="status-badge status-{{ service.status }}">
+                {{ service.get_status_display }}
+            </span>
+            {% if service.renews_on %}
+                &nbsp;·&nbsp; Renews {{ service.renews_on|date:"d M, Y" }}
+            {% endif %}
+        </p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="public-container">
+        <div class="service-detail-grid">
+            <div class="detail-main">
+                <div class="detail-card">
+                    <h2 class="detail-card-title">Registration</h2>
+
+                    <div class="cred-row">
+                        <div class="cred-label">Domain</div>
+                        <div class="cred-value mono">{{ service.name }}</div>
+                    </div>
+                    <div class="cred-row">
+                        <div class="cred-label">Status</div>
+                        <div class="cred-value">
+                            <span class="status-badge status-{{ service.status }}">
+                                {{ service.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                    {% if service.provisioned_at %}
+                    <div class="cred-row">
+                        <div class="cred-label">Registered</div>
+                        <div class="cred-value">{{ service.provisioned_at|date:"d M, Y" }}</div>
+                    </div>
+                    {% endif %}
+                    {% if service.renews_on %}
+                    <div class="cred-row">
+                        <div class="cred-label">Renews on</div>
+                        <div class="cred-value">{{ service.renews_on|date:"d M, Y" }}</div>
+                    </div>
+                    {% endif %}
+                    <div class="cred-row">
+                        <div class="cred-label">Auto-renew</div>
+                        <div class="cred-value">
+                            <label class="switch">
+                                <input type="checkbox" checked disabled aria-label="Auto-renew enabled">
+                                <span class="switch-slider"></span>
+                            </label>
+                            <span class="sr-only">Enabled (display only)</span>
+                        </div>
+                    </div>
+                    <div class="cred-row">
+                        <div class="cred-label">WHOIS privacy</div>
+                        <div class="cred-value">Enabled ✓</div>
+                    </div>
+                </div>
+
+                <div class="detail-card">
+                    <h2 class="detail-card-title">Nameservers</h2>
+                    {% if service.nameservers %}
+                        {% for nameserver in service.nameservers %}
+                        <div class="cred-row">
+                            <div class="cred-label">NS{{ forloop.counter }}</div>
+                            <div class="cred-value mono">{{ nameserver }}</div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="detail-help">No nameservers assigned yet.</p>
+                    {% endif %}
+                    <p class="action-note">
+                        Using InterServer nameservers. To point this domain at
+                        an external host, replace these at your registrar.
+                    </p>
+                </div>
+
+                <div class="detail-card">
+                    <h2 class="detail-card-title">DNS Records</h2>
+                    <p class="detail-help" style="margin-bottom: 16px;">
+                        {{ dns_count }} record{{ dns_count|pluralize }} in the zone.
+                    </p>
+                    <a href="{% url 'dashboard:dns_editor' service.id %}" class="btn-primary">
+                        Open DNS Editor →
+                    </a>
+                </div>
+            </div>
+
+            <aside class="detail-side">
+                <div class="detail-card">
+                    <h2 class="detail-card-title">Billing</h2>
+                    <div class="summary-line">
+                        <span>Renewal price</span>
+                        <span>${{ service.price|floatformat:2 }}</span>
+                    </div>
+                    {% if service.renews_on %}
+                    <div class="summary-line">
+                        <span>Next renewal</span>
+                        <span>{{ service.renews_on|date:"d M, Y" }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                <a href="{% url 'dashboard:services' %}" class="link-back">
+                    ← Back to My Services
+                </a>
+            </aside>
+        </div>
+    </div>
+</section>
+{% endblock %}

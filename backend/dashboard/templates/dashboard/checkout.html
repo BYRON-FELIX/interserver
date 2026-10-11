@@ -1,0 +1,67 @@
+{% extends "dashboard/base_public.html" %}
+{% load static %}
+
+{% block title %}Checkout — InterServer{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+    <div class="public-container">
+        <span class="hero-eyebrow">Checkout</span>
+        <h1 class="page-hero-title">Confirm your order</h1>
+        <p class="page-hero-sub">
+            We'll create an invoice for these items. You can pay right after.
+        </p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="public-container">
+        <div class="cart-layout">
+
+            <div class="cart-items">
+                {% for item in cart_items %}
+                <div class="cart-row">
+                    <div class="cart-row-main">
+                        <div class="cart-kind">{{ item.plan.get_category_display }}</div>
+                        <div class="cart-name">{{ item.plan.name }}</div>
+                        <div class="cart-tagline">{{ item.plan.tagline }}</div>
+                    </div>
+                    <div class="cart-row-price">
+                        <div class="cart-unit">${{ item.plan.price|floatformat:2 }}</div>
+                        <div class="cart-period">/{{ item.period }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <aside class="cart-summary">
+                <h3 class="summary-title">Order Total</h3>
+
+                <div class="summary-line">
+                    <span>Items</span>
+                    <span>{{ cart_items|length }}</span>
+                </div>
+
+                <div class="summary-line summary-total">
+                    <span>Total due</span>
+                    <span>${{ cart_total|floatformat:2 }}</span>
+                </div>
+
+                <form method="post" action="{% url 'dashboard:checkout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-primary btn-block">
+                        Place Order
+                    </button>
+                </form>
+
+                <a href="{% url 'dashboard:cart' %}" class="link-back">
+                    ← Back to cart
+                </a>
+            </aside>
+
+        </div>
+    </div>
+</section>
+
+{% endblock %}

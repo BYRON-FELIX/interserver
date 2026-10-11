@@ -1,0 +1,39 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signed out — InterServer</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body class="login-page">
+
+<div class="login-shell">
+
+    <div class="login-card login-card-center">
+        <div class="login-brand login-brand-center">
+            <div class="brand-mark">IS</div>
+            <span class="brand-name">InterServer</span>
+        </div>
+
+        <div class="logged-out-icon">✓</div>
+
+        <h1 class="login-heading">You've been signed out</h1>
+        <p class="login-sub">
+            Thanks for using the InterServer dashboard. Your session ended safely.
+        </p>
+
+        <a href="{% url 'login' %}" class="login-btn login-btn-block">
+            Sign in again
+        </a>
+
+        <p class="login-footer">
+            &copy; InterServer — internal dashboard
+        </p>
+    </div>
+
+</div>
+
+</body>
+</html>

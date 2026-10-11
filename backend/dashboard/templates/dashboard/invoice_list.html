@@ -1,0 +1,67 @@
+{% extends "dashboard/base_public.html" %}
+{% load static %}
+
+{% block title %}Billing — InterServer{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+    <div class="public-container">
+        <span class="hero-eyebrow">Billing</span>
+        <h1 class="page-hero-title">Your invoices</h1>
+        <p class="page-hero-sub">Every order and payment in one place.</p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="public-container">
+
+        {% if invoices %}
+        <div class="invoice-table">
+            <div class="invoice-table-head">
+                <span>Invoice</span>
+                <span>Issued</span>
+                <span>Amount</span>
+                <span>Status</span>
+                <span></span>
+            </div>
+
+            {% for inv in invoices %}
+            <div class="invoice-table-row">
+                <span class="it-num">{{ inv.number }}</span>
+                <span class="it-date">{{ inv.issued_on|date:"d M, Y" }}</span>
+                <span class="it-amount">${{ inv.amount|floatformat:2 }}</span>
+                <span>
+                    <span class="status-badge status-{{ inv.status|lower }}">
+                        {{ inv.get_status_display }}
+                    </span>
+                </span>
+                <span>
+                    {% if inv.status == "paid" %}
+                    <a href="{% url 'dashboard:invoice_receipt' inv.id %}" class="it-link">
+                        Receipt →
+                    </a>
+                    {% else %}
+                    <a href="{% url 'dashboard:invoice_detail' inv.id %}" class="it-link">
+                        View →
+                    </a>
+                    {% endif %}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-panel">
+            <div class="empty-icon-lg">📄</div>
+            <h2 class="empty-title">No invoices yet</h2>
+            <p class="empty-sub">Your orders will show up here.</p>
+            <a href="{% url 'dashboard:hosting' %}" class="btn-primary">
+                Browse Plans
+            </a>
+        </div>
+        {% endif %}
+
+    </div>
+</section>
+
+{% endblock %}

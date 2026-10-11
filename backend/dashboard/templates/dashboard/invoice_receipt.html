@@ -1,0 +1,158 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt {{ invoice.number }} — InterServer</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <style>
+        body { background: #f4f6fa; }
+        .receipt-wrap { max-width: 620px; margin: 40px auto; padding: 0 20px; }
+        .receipt {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 40px;
+        }
+        .receipt-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding-bottom: 24px;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 24px;
+        }
+        .receipt-brand { display: flex; align-items: center; gap: 12px; }
+        .receipt-paid {
+            display: inline-block;
+            background: #e2f7ee;
+            color: #0e7f57;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            padding: 6px 14px;
+            border-radius: 999px;
+            text-transform: uppercase;
+        }
+        .receipt-title { font-size: 26px; font-weight: 800; margin: 24px 0 6px; }
+        .receipt-sub { color: var(--text-dim); font-size: 13px; margin-bottom: 30px; }
+        .receipt-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 10px 0;
+            font-size: 14px;
+            border-bottom: 1px solid var(--border);
+        }
+        .receipt-row:last-of-type { border-bottom: 0; }
+        .receipt-label { color: var(--text-dim); font-weight: 600; }
+        .receipt-value { font-weight: 700; text-align: right; overflow-wrap: anywhere; }
+        .receipt-total {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px 0 0;
+            margin-top: 20px;
+            border-top: 2px solid var(--border);
+            font-size: 20px;
+            font-weight: 800;
+        }
+        .receipt-actions { text-align: center; margin-top: 24px; }
+        @media (max-width: 600px) {
+            .receipt { padding: 24px; }
+            .receipt-head { gap: 12px; }
+        }
+        @media print {
+            body { background: #fff; }
+            .receipt-wrap { margin: 0; max-width: none; }
+            .receipt { border: 0; box-shadow: none; padding: 20px; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+<div class="receipt-wrap">
+    <div class="receipt">
+        <div class="receipt-head">
+            <div class="receipt-brand">
+                <div class="brand-mark dark">IS</div>
+                <div>
+                    <div style="font-weight:800;font-size:18px;color:#0f1e33;">InterServer</div>
+                    <div style="font-size:12px;color:#7d8ba3;">Hosting · VPS · Domains</div>
+                </div>
+            </div>
+            <span class="receipt-paid">Paid</span>
+        </div>
+
+        <h1 class="receipt-title">Receipt</h1>
+        <p class="receipt-sub">Thank you for your business.</p>
+
+        <div class="receipt-row">
+            <span class="receipt-label">Receipt no.</span>
+            <span class="receipt-value">{{ invoice.number }}</span>
+        </div>
+        <div class="receipt-row">
+            <span class="receipt-label">Issued</span>
+            <span class="receipt-value">{{ invoice.issued_on|date:"d M, Y" }}</span>
+        </div>
+        <div class="receipt-row">
+            <span class="receipt-label">Paid on</span>
+            <span class="receipt-value">{{ invoice.paid_on|date:"d M, Y"|default:"—" }}</span>
+        </div>
+        <div class="receipt-row">
+            <span class="receipt-label">Billed to</span>
+            <span class="receipt-value">
+                {% if invoice.owner.get_full_name %}
+                    {{ invoice.owner.get_full_name }}
+                {% else %}
+                    {{ invoice.owner.username }}
+                {% endif %}
+                {% if invoice.owner.email %}
+                <br>
+                <span style="font-weight:400;color:#6b7688;font-size:12px;">
+                    {{ invoice.owner.email }}
+                </span>
+                {% endif %}
+            </span>
+        </div>
+
+        {% if payment %}
+        <div class="receipt-row">
+            <span class="receipt-label">Method</span>
+            <span class="receipt-value">M-Pesa · {{ payment.phone }}</span>
+        </div>
+        <div class="receipt-row">
+            <span class="receipt-label">Reference</span>
+            <span class="receipt-value">{{ payment.reference }}</span>
+        </div>
+        {% endif %}
+
+        <div class="receipt-total">
+            <span>Total paid</span>
+            <span>
+                {% if invoice.kes_amount %}
+                    KSh {{ invoice.kes_amount|floatformat:2 }}
+                {% else %}
+                    ${{ invoice.amount|floatformat:2 }}
+                {% endif %}
+            </span>
+        </div>
+
+        <p style="text-align:center;color:#7d8ba3;font-size:12px;margin-top:30px;">
+            This is a computer-generated receipt. No signature required.
+        </p>
+    </div>
+
+    <div class="receipt-actions no-print">
+        <button type="button" onclick="window.print();" class="btn-primary">
+            Print / Save as PDF
+        </button>
+        <a href="{% url 'dashboard:invoice_detail' invoice.id %}"
+           class="link-back" style="margin-top:14px;display:block;">
+            ← Back to invoice
+        </a>
+    </div>
+</div>
+</body>
+</html>

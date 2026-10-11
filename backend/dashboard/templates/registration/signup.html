@@ -1,0 +1,67 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create your account — InterServer</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body class="login-page">
+
+<div class="login-shell">
+
+    <div class="login-card">
+        <div class="login-brand">
+            <div class="brand-mark">IS</div>
+            <span class="brand-name">InterServer</span>
+        </div>
+
+        <h1 class="login-heading">Create your account</h1>
+        <p class="login-sub">Get hosting, VPS and domains in under a minute.</p>
+
+        {% if form.non_field_errors %}
+            <div class="login-error">
+                {% for err in form.non_field_errors %}{{ err }}<br>{% endfor %}
+            </div>
+        {% endif %}
+
+        <form method="post" class="login-form" novalidate>
+            {% csrf_token %}
+
+            {% for field in form %}
+                <label class="login-label" for="{{ field.id_for_label }}">
+                    {{ field.label }}
+                </label>
+                <input
+                    type="{{ field.field.widget.input_type }}"
+                    name="{{ field.name }}"
+                    id="{{ field.id_for_label }}"
+                    class="login-input"
+                    {% if field.value %}value="{{ field.value }}"{% endif %}
+                    {% if field.field.required %}required{% endif %}
+                    {% if field.field.widget.attrs.autocomplete %}autocomplete="{{ field.field.widget.attrs.autocomplete }}"{% endif %}
+                >
+                {% if field.errors %}
+                    <div class="field-error">
+                        {% for err in field.errors %}{{ err }}<br>{% endfor %}
+                    </div>
+                {% endif %}
+                {% if field.help_text %}
+                    <div class="field-help">{{ field.help_text|safe }}</div>
+                {% endif %}
+            {% endfor %}
+
+            <button type="submit" class="login-btn">Create account</button>
+        </form>
+
+        <p class="login-footer">
+            Already have an account?
+            <a href="{% url 'login' %}" class="link-inline">Sign in</a>
+        </p>
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,122 @@
+{% extends "dashboard/base_public.html" %}
+
+{% block title %}DNS — {{ service.name }}{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="public-container">
+        <span class="hero-eyebrow">DNS Manager</span>
+        <h1 class="page-hero-title">{{ service.name }}</h1>
+        <p class="page-hero-sub">
+            Manage the DNS zone for this domain. Changes are saved to this demo zone.
+        </p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="public-container">
+        {% if messages %}
+            {% for message in messages %}
+            <div class="flash flash-{{ message.tags }}" role="status">
+                {{ message }}
+            </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="detail-card dns-add-card">
+            <h2 class="detail-card-title">Add a new record</h2>
+            <form method="post" action="{% url 'dashboard:dns_add' service.id %}" class="dns-form">
+                {% csrf_token %}
+                <div class="dns-form-grid">
+                    <div class="dns-field">
+                        <label class="login-label" for="dnsType">Type</label>
+                        <select name="type" id="dnsType" class="login-input" required>
+                            {% for value, label in record_types %}
+                                <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="dns-field">
+                        <label class="login-label" for="dnsName">Name</label>
+                        <input type="text" name="name" id="dnsName"
+                               class="login-input" placeholder="@ or www"
+                               maxlength="128" required>
+                    </div>
+                    <div class="dns-field dns-field-wide">
+                        <label class="login-label" for="dnsValue">Value</label>
+                        <input type="text" name="value" id="dnsValue"
+                               class="login-input"
+                               placeholder="e.g. 192.0.2.10 or mail.example.com"
+                               maxlength="255" required>
+                    </div>
+                    <div class="dns-field">
+                        <label class="login-label" for="dnsTtl">TTL (seconds)</label>
+                        <input type="number" name="ttl" id="dnsTtl"
+                               class="login-input" value="3600"
+                               min="60" max="86400" required>
+                    </div>
+                    <div class="dns-field">
+                        <label class="login-label" for="dnsPriority">Priority</label>
+                        <input type="number" name="priority" id="dnsPriority"
+                               class="login-input" placeholder="MX or SRV only"
+                               min="0" max="65535">
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary">Add record</button>
+            </form>
+        </div>
+
+        <div class="detail-card dns-record-card">
+            <h2 class="detail-card-title">Zone records ({{ records|length }})</h2>
+            {% if records %}
+            <div class="dns-table">
+                <div class="dns-table-head">
+                    <span>Type</span>
+                    <span>Name</span>
+                    <span>Value</span>
+                    <span>TTL</span>
+                    <span></span>
+                </div>
+                {% for record in records %}
+                <div class="dns-table-row">
+                    <span>
+                        <span class="dns-type dns-type-{{ record.type|lower }}">
+                            {{ record.type }}
+                        </span>
+                    </span>
+                    <span class="mono">{{ record.name }}</span>
+                    <span class="mono dns-value">
+                        {{ record.value }}
+                        {% if record.priority != None %}
+                            <span class="dns-prio">prio {{ record.priority }}</span>
+                        {% endif %}
+                    </span>
+                    <span class="mono">{{ record.ttl }}</span>
+                    <span>
+                        <form method="post"
+                              action="{% url 'dashboard:dns_delete' service.id record.id %}"
+                              onsubmit="return confirm('Delete this record?');"
+                              class="dns-delete-form">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-remove" title="Delete record"
+                                    aria-label="Delete {{ record.type }} record {{ record.name }}">
+                                ✕
+                            </button>
+                        </form>
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="detail-help">No records yet. Add one above to get started.</p>
+            {% endif %}
+        </div>
+
+        <div class="dns-back-link">
+            <a href="{% url 'dashboard:service_detail' service.id %}" class="link-back">
+                ← Back to domain
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends "dashboard/base_public.html" %}
+{% load static %}
+
+{% block title %}VPS Hosting — InterServer{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+    <div class="public-container">
+        <span class="hero-eyebrow">VPS & Dedicated</span>
+        <h1 class="page-hero-title">Cloud VPS with full root access</h1>
+        <p class="page-hero-sub">
+            Real resources, NVMe storage, and DDoS protection. Provisioned in
+            seconds — scale as you grow.
+        </p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="public-container">
+        <div class="section-head">
+            <h2 class="section-title">VPS Plans</h2>
+            <p class="section-sub">From starter apps to production workloads.</p>
+        </div>
+
+        <div class="plan-grid">
+            {% for plan in vps_plans %}
+                {% include "dashboard/_plan_card.html" with plan=plan %}
+            {% empty %}
+                <p class="empty-note">No VPS plans available yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="section section-alt">
+    <div class="public-container">
+        <div class="section-head">
+            <h2 class="section-title">Dedicated Servers</h2>
+            <p class="section-sub">Bare metal. Single tenant. Maximum performance.</p>
+        </div>
+
+        <div class="plan-grid">
+            {% for plan in dedicated_plans %}
+                {% include "dashboard/_plan_card.html" with plan=plan %}
+            {% empty %}
+                <p class="empty-note">No dedicated servers available yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="public-container">
+        <div class="section-head section-head-center">
+            <h2 class="section-title">Built for developers</h2>
+            <p class="section-sub">You get the keys. We keep the lights on.</p>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature">
+                <div class="feature-icon">🔑</div>
+                <h3>Full Root Access</h3>
+                <p>Install anything. Configure everything.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🐧</div>
+                <h3>Choice of OS</h3>
+                <p>Ubuntu, Debian, CentOS, AlmaLinux, Windows.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">⚡</div>
+                <h3>NVMe Storage</h3>
+                <p>Up to 10x faster than traditional SSDs.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🛡</div>
+                <h3>DDoS Protection</h3>
+                <p>Always-on mitigation, included free.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

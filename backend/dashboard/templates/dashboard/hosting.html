@@ -1,0 +1,85 @@
+{% extends "dashboard/base_public.html" %}
+{% load static %}
+
+{% block title %}Web Hosting — InterServer{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+    <div class="public-container">
+        <span class="hero-eyebrow">Web Hosting</span>
+        <h1 class="page-hero-title">Shared & WordPress hosting</h1>
+        <p class="page-hero-sub">
+            Fast, reliable hosting for every kind of website. Free SSL, unlimited
+            bandwidth, and 24/7 support on every plan.
+        </p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="public-container">
+        <div class="section-head">
+            <h2 class="section-title">Shared Hosting</h2>
+            <p class="section-sub">Best for personal sites, blogs, and small businesses.</p>
+        </div>
+
+        <div class="plan-grid">
+            {% for plan in shared_plans %}
+                {% include "dashboard/_plan_card.html" with plan=plan %}
+            {% empty %}
+                <p class="empty-note">No shared hosting plans available yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="section section-alt">
+    <div class="public-container">
+        <div class="section-head">
+            <h2 class="section-title">Managed WordPress Hosting</h2>
+            <p class="section-sub">WordPress optimized, tuned, and pre-installed.</p>
+        </div>
+
+        <div class="plan-grid">
+            {% for plan in wordpress_plans %}
+                {% include "dashboard/_plan_card.html" with plan=plan %}
+            {% empty %}
+                <p class="empty-note">No WordPress plans available yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="public-container">
+        <div class="section-head section-head-center">
+            <h2 class="section-title">Included with every plan</h2>
+            <p class="section-sub">No hidden extras. No upsells.</p>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature">
+                <div class="feature-icon">🔒</div>
+                <h3>Free SSL</h3>
+                <p>Automatic HTTPS on every domain you connect.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">💾</div>
+                <h3>Daily Backups</h3>
+                <p>Your data is safe — restorable in one click.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">📧</div>
+                <h3>Email Accounts</h3>
+                <p>Professional @yourdomain email built in.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">⚙️</div>
+                <h3>1-Click Installer</h3>
+                <p>WordPress, Joomla, and 400+ apps.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

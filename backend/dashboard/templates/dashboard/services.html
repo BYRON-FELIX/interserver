@@ -1,0 +1,193 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Services — InterServer</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+
+<div class="app">
+
+    <!-- ============ SIDEBAR (same as index) ============ -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-mark">IS</div>
+            <span class="brand-name">InterServer</span>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="{% url 'dashboard:home' %}" class="nav-item">
+                <span class="nav-icon">▤</span> Dashboard
+            </a>
+            <a href="{% url 'dashboard:services' %}?kind=domain"
+               class="nav-item {% if active_filter == 'domain' %}active{% endif %}">
+                <span class="nav-icon">◎</span> Domains
+            </a>
+            <a href="{% url 'dashboard:services' %}?kind=domain"
+               class="nav-item">
+                <span class="nav-icon">⚙</span> DNS Manager
+            </a>
+            <a href="{% url 'dashboard:services' %}?kind=vps"
+               class="nav-item {% if active_filter == 'vps' %}active{% endif %}">
+                <span class="nav-icon">▦</span> VPS
+            </a>
+            <a href="{% url 'dashboard:services' %}?kind=storage"
+               class="nav-item {% if active_filter == 'storage' %}active{% endif %}">
+                <span class="nav-icon">▥</span> Storage
+            </a>
+            <a href="{% url 'dashboard:services' %}?kind=mail"
+               class="nav-item {% if active_filter == 'mail' %}active{% endif %}">
+                <span class="nav-icon">✉</span> Mail
+            </a>
+            <a href="{% url 'dashboard:services' %}?kind=license"
+               class="nav-item {% if active_filter == 'license' %}active{% endif %}">
+                <span class="nav-icon">▤</span> Licenses
+            </a>
+            <a href="{% url 'dashboard:services' %}?kind=floating_ip"
+               class="nav-item {% if active_filter == 'floating_ip' %}active{% endif %}">
+                <span class="nav-icon">◈</span> Floating IPs
+            </a>
+            <a href="{% url 'dashboard:services' %}?kind=scrub_ip"
+               class="nav-item {% if active_filter == 'scrub_ip' %}active{% endif %}">
+                <span class="nav-icon">▼</span> Scrub IPs
+            </a>
+            <a href="{% url 'dashboard:services' %}?kind=webhosting"
+               class="nav-item {% if active_filter == 'webhosting' %}active{% endif %}">
+                <span class="nav-icon">▢</span> Webhosting
+            </a>
+            <a href="{% url 'dashboard:services' %}?kind=rapid_deploy"
+               class="nav-item {% if active_filter == 'rapid_deploy' %}active{% endif %}">
+                <span class="nav-icon">☁</span> Rapid Deploy Servers
+            </a>
+            <a href="{% url 'dashboard:services' %}?kind=vps"
+               class="nav-item">
+                <span class="nav-icon">▤</span> Servers
+            </a>
+        </nav>
+
+        <div class="sidebar-user">
+            <div class="avatar">{{ request.user.username|slice:":1"|upper }}</div>
+            <div class="user-meta">
+                <div class="user-name">
+                    {% if request.user.get_full_name %}
+                        {{ request.user.get_full_name }}
+                    {% else %}
+                        {{ request.user.username }}
+                    {% endif %}
+                </div>
+                <div class="user-email">{{ request.user.email }}</div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ============ MAIN ============ -->
+    <div class="main">
+
+        <header class="topbar">
+            <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">☰</button>
+            <input type="text" class="topbar-search" placeholder="Search services, IPs, domains...">
+            <div class="topbar-actions">
+                <a href="{% url 'dashboard:cart' %}" class="icon-btn" title="Cart">🛒</a>
+                <form method="post" action="{% url 'logout' %}" class="logout-form">
+                    {% csrf_token %}
+                    <button type="submit" class="icon-btn" title="Logout">⏻</button>
+                </form>
+            </div>
+        </header>
+
+        <main class="content">
+
+            <!-- Page header -->
+            <div class="page-head">
+                <div>
+                    <h1 class="page-title">My Services</h1>
+                    <p class="page-sub">
+                        Manage everything you own on InterServer.
+                    </p>
+                </div>
+                <a href="{% url 'dashboard:hosting' %}" class="btn-primary">
+                    + Order New Service
+                </a>
+            </div>
+
+            <!-- Filter pills -->
+            <div class="filter-row">
+                {% for f in filters %}
+                    {% if f.count > 0 or f.key == "" %}
+                    <a href="?{% if f.key %}kind={{ f.key }}{% endif %}"
+                       class="filter-pill {% if active_filter == f.key %}active{% endif %}">
+                        {{ f.label }}
+                        <span class="pill-count">{{ f.count }}</span>
+                    </a>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            <!-- Service grid -->
+            {% if services %}
+            <div class="service-grid">
+                {% for svc in services %}
+                <div class="service-card">
+                    <div class="service-head">
+                        <div class="service-kind">{{ svc.get_kind_display }}</div>
+                        <span class="status-badge status-{{ svc.status }}">
+                            {{ svc.get_status_display }}
+                        </span>
+                    </div>
+
+                    <div class="service-name">{{ svc.name }}</div>
+
+                    <div class="service-meta">
+                        {% if svc.renews_on %}
+                        <div class="service-meta-row">
+                            <span class="meta-label">Renews</span>
+                            <span class="meta-value">
+                                {{ svc.renews_on|date:"d M, Y" }}
+                            </span>
+                        </div>
+                        {% endif %}
+                        <div class="service-meta-row">
+                            <span class="meta-label">Price</span>
+                            <span class="meta-value">
+                                ${{ svc.price|floatformat:2 }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="service-actions">
+                        <a href="{% url 'dashboard:service_detail' svc.id %}"
+                           class="btn-outline-sm btn-link">
+                            Manage
+                        </a>
+                        <button class="btn-outline-sm">Renew</button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-panel">
+                <div class="empty-icon-lg">▢</div>
+                <h2 class="empty-title">No services yet</h2>
+                <p class="empty-sub">
+                    {% if active_filter %}
+                        You don't have any services in that category.
+                    {% else %}
+                        You haven't ordered any services yet.
+                    {% endif %}
+                </p>
+                <a href="{% url 'dashboard:hosting' %}" class="btn-primary">
+                    + Order New Service
+                </a>
+            </div>
+            {% endif %}
+
+        </main>
+    </div>
+</div>
+
+<script src="{% static 'js/main.js' %}"></script>
+</body>
+</html>

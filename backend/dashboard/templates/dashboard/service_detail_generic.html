@@ -1,0 +1,79 @@
+{% extends "dashboard/base_public.html" %}
+
+{% block title %}{{ service.name }} — InterServer{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="public-container">
+        <span class="hero-eyebrow">{{ service.get_kind_display }}</span>
+        <h1 class="page-hero-title">{{ service.name }}</h1>
+        <p class="page-hero-sub">
+            <span class="status-badge status-{{ service.status }}">
+                {{ service.get_status_display }}
+            </span>
+        </p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="public-container service-detail-grid">
+        <div class="detail-main">
+            <div class="detail-card">
+                <h2 class="detail-card-title">Service details</h2>
+                {% if service.ip_address %}
+                <div class="cred-row">
+                    <div class="cred-label">IP address</div>
+                    <div class="cred-value mono">{{ service.ip_address }}</div>
+                </div>
+                {% endif %}
+                {% if service.hostname %}
+                <div class="cred-row">
+                    <div class="cred-label">Hostname</div>
+                    <div class="cred-value mono">{{ service.hostname }}</div>
+                </div>
+                {% endif %}
+                {% if service.nameservers %}
+                <div class="cred-row">
+                    <div class="cred-label">Nameservers</div>
+                    <div class="cred-value">{{ service.nameservers|join:", " }}</div>
+                </div>
+                {% endif %}
+                {% if service.kind == "domain" %}
+                <div class="cred-row">
+                    <div class="cred-label">DNS records</div>
+                    <div class="cred-value">{{ dns_count }}</div>
+                </div>
+                {% endif %}
+                {% if service.provisioned_at %}
+                <div class="cred-row">
+                    <div class="cred-label">Provisioned</div>
+                    <div class="cred-value">{{ service.provisioned_at|date:"d M, Y H:i" }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <aside class="detail-side">
+            <div class="detail-card">
+                <h2 class="detail-card-title">Billing</h2>
+                <div class="summary-line">
+                    <span>Recurring</span>
+                    <span>${{ service.price|floatformat:2 }}</span>
+                </div>
+                {% if service.renews_on %}
+                <div class="summary-line">
+                    <span>Next renewal</span>
+                    <span>{{ service.renews_on|date:"d M, Y" }}</span>
+                </div>
+                {% endif %}
+                <div class="summary-line summary-total">
+                    <span>Status</span>
+                    <span>{{ service.get_status_display }}</span>
+                </div>
+            </div>
+            <a href="{% url 'dashboard:services' %}" class="link-back">
+                ← Back to My Services
+            </a>
+        </aside>
+    </div>
+</section>
+{% endblock %}

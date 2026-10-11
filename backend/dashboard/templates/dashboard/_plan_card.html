@@ -1,0 +1,25 @@
+<div class="plan-card {% if plan.is_featured %}plan-featured{% endif %}">
+    {% if plan.is_featured %}
+        <div class="plan-badge">Most Popular</div>
+    {% endif %}
+
+    <div class="plan-name">{{ plan.name }}</div>
+    <div class="plan-tagline">{{ plan.tagline }}</div>
+
+    <div class="plan-price">
+        <span class="plan-currency">$</span>
+        <span class="plan-amount">{{ plan.price|floatformat:2 }}</span>
+        <span class="plan-period">/{{ plan.get_billing_period_display|lower }}</span>
+    </div>
+
+    <ul class="plan-features">
+        {% for feature in plan.features %}
+            <li>{{ feature }}</li>
+        {% endfor %}
+    </ul>
+
+    <form method="post" action="{% url 'dashboard:add_to_cart' plan.id %}" class="plan-cta-form">
+        {% csrf_token %}
+        <button type="submit" class="plan-cta">Order Now</button>
+    </form>
+</div>

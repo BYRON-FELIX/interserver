@@ -1,0 +1,208 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — InterServer</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+
+<div class="app">
+
+    <!-- ============ SIDEBAR ============ -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-mark">IS</div>
+            <span class="brand-name">InterServer</span>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="{% url 'dashboard:home' %}" class="nav-item active">
+                <span class="nav-icon">▤</span> Dashboard
+            </a>
+            <a href="{% url 'dashboard:services' %}?kind=domain" class="nav-item">
+                <span class="nav-icon">◎</span> Domains
+            </a>
+            <a href="{% url 'dashboard:services' %}?kind=domain" class="nav-item">
+                <span class="nav-icon">⚙</span> DNS Manager
+            </a>
+            <a href="{% url 'dashboard:services' %}?kind=vps" class="nav-item">
+                <span class="nav-icon">▦</span> VPS
+            </a>
+            <a href="{% url 'dashboard:services' %}?kind=storage" class="nav-item">
+                <span class="nav-icon">▥</span> Storage
+            </a>
+            <a href="{% url 'dashboard:services' %}?kind=mail" class="nav-item">
+                <span class="nav-icon">✉</span> Mail
+            </a>
+            <a href="{% url 'dashboard:services' %}?kind=license" class="nav-item">
+                <span class="nav-icon">▤</span> Licenses
+            </a>
+            <a href="{% url 'dashboard:services' %}?kind=floating_ip" class="nav-item">
+                <span class="nav-icon">◈</span> Floating IPs
+            </a>
+            <a href="{% url 'dashboard:services' %}?kind=scrub_ip" class="nav-item">
+                <span class="nav-icon">▼</span> Scrub IPs
+            </a>
+            <a href="{% url 'dashboard:services' %}?kind=webhosting" class="nav-item">
+                <span class="nav-icon">▢</span> Webhosting
+            </a>
+            <a href="{% url 'dashboard:services' %}?kind=rapid_deploy" class="nav-item">
+                <span class="nav-icon">☁</span> Rapid Deploy Servers
+            </a>
+            <a href="{% url 'dashboard:services' %}?kind=vps" class="nav-item">
+                <span class="nav-icon">▤</span> Servers
+            </a>
+        </nav>
+
+        <div class="sidebar-user">
+            <div class="avatar">{{ request.user.username|slice:":1"|upper }}</div>
+            <div class="user-meta">
+                <div class="user-name">
+                    {% if request.user.get_full_name %}
+                        {{ request.user.get_full_name }}
+                    {% else %}
+                        {{ request.user.username }}
+                    {% endif %}
+                    <span class="edit-icon">✎</span>
+                </div>
+                <div class="user-email">{{ request.user.email }}</div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ============ MAIN ============ -->
+    <div class="main">
+
+        <!-- Topbar -->
+        <header class="topbar">
+            <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">☰</button>
+            <input type="text" class="topbar-search" placeholder="Search services, IPs, domains...">
+            <div class="topbar-actions">
+                <a href="{% url 'dashboard:cart' %}" class="icon-btn" title="Cart">🛒</a>
+                <form method="post" action="{% url 'logout' %}" class="logout-form">
+                    {% csrf_token %}
+                    <button type="submit" class="icon-btn" title="Logout">⏻</button>
+                </form>
+            </div>
+        </header>
+
+        <!-- Content -->
+        <main class="content">
+
+            <!-- Top row: 3 big cards -->
+            <section class="row-cards">
+
+                <div class="card card-blue">
+                    <div class="card-label">ACCOUNT</div>
+                    <div class="card-big">Active</div>
+                    <div class="card-sub">
+                        since {{ profile.customer_since|date:"d M, Y"|default:"—" }}
+                    </div>
+                </div>
+
+                <div class="card card-green">
+                    <div class="card-icon">▤</div>
+                    <div>
+                        <div class="card-label">PREPAID BALANCE</div>
+                        <div class="card-big">${{ prepaid_balance|floatformat:2 }}</div>
+                        <a href="{% url 'password_change' %}" class="card-link">Manage Account →</a>
+                    </div>
+                </div>
+
+                <div class="card card-purple">
+                    <div class="card-icon">▤</div>
+                    <div>
+                        <div class="card-label">UNPAID INVOICES</div>
+                        <div class="card-big">US${{ unpaid_total|floatformat:2 }}</div>
+                        <a href="{% url 'dashboard:invoice_list' %}" class="card-link">
+                            {{ unpaid_count }} pending • Pay Now →
+                        </a>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- Support bar -->
+            <div class="support-bar">
+                <span class="support-text">📞 Provide when calling support</span>
+            </div>
+
+            <!-- Second row: two panels + activity -->
+            <section class="row-panels">
+
+                <div class="panel">
+                    <div class="panel-head">
+                        <a href="{% url 'dashboard:services' %}"
+                           class="panel-title panel-title-link">ACCOUNT</a>
+                        <span class="badge badge-green">{{ cards.0.count }} Active</span>
+                    </div>
+                    <div class="panel-body">
+                        <div class="empty-state">
+                            <div class="empty-icon">▤</div>
+                        </div>
+                    </div>
+                    <a href="{% url 'dashboard:hosting' %}" class="btn-outline btn-outline-link">
+                        + Order New
+                    </a>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-head">
+                        <a href="{% url 'dashboard:services' %}?kind=domain"
+                           class="panel-title panel-title-link">◎ DOMAINS</a>
+                        <span class="badge badge-green">{{ cards.2.count }} Active</span>
+                    </div>
+                    <div class="panel-body">
+                        <div class="empty-state">
+                            <div class="empty-icon">✉</div>
+                            <div class="empty-text">NO ACTIVE SERVICES</div>
+                        </div>
+                    </div>
+                    <a href="{% url 'dashboard:domains' %}" class="btn-outline btn-outline-link">
+                        + Order New
+                    </a>
+                </div>
+
+                <div class="panel panel-activity">
+                    <div class="panel-head">
+                        <div class="panel-title">◎ RECENT ACTIVITY</div>
+                        <span class="badge badge-blue">
+                            {{ recent_activity|length }} Updates
+                        </span>
+                    </div>
+
+                    <div class="activity-list">
+                        {% for item in recent_activity %}
+                        <div class="activity-item">
+                            <div class="activity-dot">⇄</div>
+                            <div class="activity-content">
+                                <div class="activity-row">
+                                    <div class="activity-title">{{ item.title }}</div>
+                                    <span class="badge badge-blue">{{ item.get_category_display }}</span>
+                                </div>
+                                {% if item.ip_address %}
+                                <div class="activity-sub">IP: {{ item.ip_address }}</div>
+                                {% endif %}
+                                <div class="activity-sub">
+                                    🕑 {{ item.created_at|date:"M d, Y g:i A" }}
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="activity-empty">No recent activity</div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+            </section>
+
+        </main>
+    </div>
+</div>
+
+<script src="{% static 'js/main.js' %}"></script>
+</body>
+</html>

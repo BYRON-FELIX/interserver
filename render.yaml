@@ -24,14 +24,12 @@ services:
         fromDatabase:
           name: interserver-db
           property: connectionString
-      - key: PAYHERO_USERNAME
+      - key: PAYHERO_API_URL
+        value: "https://backend.payhero.co.ke/api/v2/payments"
+      - key: PAYHERO_BASIC_AUTH
         sync: false
-      - key: PAYHERO_PASSWORD
+      - key: PAYHERO_CHANNEL_ID
         sync: false
-      - key: PAYHERO_ACCOUNT_ID
-        sync: false
-      - key: PAYHERO_STK_URL
-        value: "https://payherokenya.com/sps/portal/app/stk.php"
       - key: EXCHANGE_RATE_API_KEY
         sync: false
       - key: EXCHANGE_RATE_FALLBACK_KES_PER_USD

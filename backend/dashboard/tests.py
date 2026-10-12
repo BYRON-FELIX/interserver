@@ -7,7 +7,7 @@ from .payhero import PayHeroClient
 
 class PayHeroClientTests(SimpleTestCase):
     @override_settings(
-        PAYHERO_API_URL="https://payhero.example/api/v2/payments/initiate-stk-push",
+        PAYHERO_API_URL="https://payhero.example/api/v2/payments",
         PAYHERO_BASIC_AUTH="Basic test-token",
         PAYHERO_CHANNEL_ID="channel-123",
     )
@@ -28,7 +28,7 @@ class PayHeroClientTests(SimpleTestCase):
 
         self.assertTrue(result["success"])
         post.assert_called_once_with(
-            "https://payhero.example/api/v2/payments/initiate-stk-push",
+            "https://payhero.example/api/v2/payments",
             json={
                 "amount": 3500,
                 "phone_number": "254712345678",

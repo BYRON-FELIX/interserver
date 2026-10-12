@@ -3,7 +3,7 @@ PayHero v2 Developer API client.
 
 Auth: HTTP Basic Auth (base64-encoded username:password), sent as
       Authorization: Basic <token>
-Endpoint: POST /api/v2/payments/initiate-stk-push
+Endpoint: POST /api/v2/payments
 Payload: amount, phone_number, channel_id, provider, external_reference
 
 Public API:

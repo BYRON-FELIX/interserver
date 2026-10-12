@@ -1,10 +1,10 @@
 """
 PayHero v2 Developer API client.
 
-Auth: HTTP Basic Auth (base64-encoded username:password), sent as
-      Authorization: Basic <token>
-Endpoint: POST /api/v2/payments/initiate-stk-push
-Payload: amount, phone_number, channel_id, provider, external_reference
+Auth: Pay Hero API Key token, sent as Authorization: Basic <token>
+Endpoint: POST /api/v2/payments
+Payload: amount, phone_number, channel_id, provider, external_reference,
+         and callback_url when configured
 
 Public API:
     client = PayHeroClient()
@@ -12,6 +12,7 @@ Public API:
         amount_kes=Decimal("3500"),
         phone="254712345678",
         reference="INV-2026-0001",
+        callback_url="https://yourdomain.com/payments/payhero/callback/",
     )
 """
 
@@ -31,8 +32,9 @@ class PayHeroError(Exception):
 class PayHeroClient:
     def __init__(self):
         self.api_url = getattr(settings, "PAYHERO_API_URL", "") or ""
-        self.auth_token = getattr(settings, "PAYHERO_AUTH_TOKEN", "") or ""
+        self.auth_token = (getattr(settings, "PAYHERO_AUTH_TOKEN", "") or "").strip()
         self.channel_id = getattr(settings, "PAYHERO_CHANNEL_ID", "") or ""
+        self.provider = getattr(settings, "PAYHERO_PROVIDER", "m-pesa") or "m-pesa"
 
     @staticmethod
     def normalize_phone(phone: str) -> str:
@@ -57,6 +59,7 @@ class PayHeroClient:
         phone: str,
         reference: str,
         description: str = "",
+        callback_url: str = "",
     ) -> dict:
         """
         Initiate an STK push via the v2 Developer API.
@@ -73,12 +76,19 @@ class PayHeroClient:
             return {"success": False, "error": "PAYHERO_AUTH_TOKEN is not configured"}
         if not self.channel_id:
             return {"success": False, "error": "PAYHERO_CHANNEL_ID is not configured"}
+        try:
+            channel_id = int(self.channel_id)
+        except ValueError:
+            return {
+                "success": False,
+                "error": "PAYHERO_CHANNEL_ID must be an integer",
+            }
 
         phone = self.normalize_phone(phone)
         if len(phone) != 12:
             return {"success": False, "error": f"Invalid phone number format: {phone}"}
 
-        auth_token = self.auth_token.strip()
+        auth_token = self.auth_token
         headers = {
             "Authorization": (
                 auth_token
@@ -91,10 +101,12 @@ class PayHeroClient:
         payload = {
             "amount": amount,
             "phone_number": phone,
-            "channel_id": self.channel_id,
-            "provider": "m-pesa",
+            "channel_id": channel_id,
+            "provider": self.provider,
             "external_reference": reference,
         }
+        if callback_url:
+            payload["callback_url"] = callback_url
 
         try:
             resp = requests.post(

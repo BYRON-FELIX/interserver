@@ -151,9 +151,14 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # ===============================================================
 # PAYHERO (v2 Developer API — Basic Auth + Channel ID)
 # ===============================================================
-PAYHERO_API_URL = "https://backend.payhero.co.ke/api/v2/payments/initiate-stk-push"
+PAYHERO_API_URL = os.getenv(
+    "PAYHERO_API_URL",
+    "https://backend.payhero.co.ke/api/v2/payments",
+)
 PAYHERO_AUTH_TOKEN = os.getenv("PAYHERO_AUTH_TOKEN", "")
 PAYHERO_CHANNEL_ID = os.getenv("PAYHERO_CHANNEL_ID", "")
+PAYHERO_PROVIDER = os.getenv("PAYHERO_PROVIDER", "m-pesa")
+PAYHERO_CALLBACK_URL = os.getenv("PAYHERO_CALLBACK_URL", "")
 
 # Currency conversion
 EXCHANGE_RATE_API_KEY = os.getenv("EXCHANGE_RATE_API_KEY", "")

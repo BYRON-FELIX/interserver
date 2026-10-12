@@ -7,10 +7,12 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.contrib import messages
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Sum, Count, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.utils import timezone
@@ -614,11 +616,17 @@ def pay_invoice(request, invoice_id):
             status=Payment.Status.INITIATED,
         )
 
+    callback_url = (
+        getattr(settings, "PAYHERO_CALLBACK_URL", "")
+        or request.build_absolute_uri(reverse("dashboard:payhero_callback"))
+    )
+
     result = PayHeroClient().stk_push(
         amount_kes=amount_kes,
         phone=phone,
         reference=invoice.number,
         description=f"Payment for {invoice.number}",
+        callback_url=callback_url,
     )
 
     payment.request_payload = {
@@ -663,11 +671,15 @@ def invoice_payment_status(request, invoice_id):
 def _callback_fields(payload):
     if not isinstance(payload, dict):
         return {}
+    merged = dict(payload)
+    response = payload.get("response")
+    if isinstance(response, dict):
+        merged.update(response)
     body = payload.get("Body")
     if isinstance(body, dict):
         callback = body.get("stkCallback")
         if isinstance(callback, dict):
-            merged = {**payload, **callback}
+            merged.update(callback)
             callback_metadata = callback.get("CallbackMetadata")
             if isinstance(callback_metadata, dict):
                 values = callback_metadata.get("Item", [])
@@ -676,7 +688,7 @@ def _callback_fields(payload):
                         if isinstance(item, dict) and "Name" in item:
                             merged.setdefault(str(item["Name"]), item.get("Value"))
             return merged
-    return payload
+    return merged
 
 
 @csrf_exempt
@@ -694,7 +706,12 @@ def payhero_callback(request):
     reference = next(
         (
             fields.get(key)
-            for key in ("reference", "external_reference", "invoice")
+            for key in (
+                "ExternalReference",
+                "external_reference",
+                "reference",
+                "invoice",
+            )
             if fields.get(key) not in (None, "")
         ),
         "",
@@ -702,7 +719,12 @@ def payhero_callback(request):
     status_raw = next(
         (
             fields.get(key)
-            for key in ("status", "transaction_status", "ResultCode")
+            for key in (
+                "ResultCode",
+                "Status",
+                "transaction_status",
+                "status",
+            )
             if fields.get(key) not in (None, "")
         ),
         "",

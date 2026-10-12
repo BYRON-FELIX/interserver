@@ -17,7 +17,11 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 
-from .cart import Cart, DOMAIN_REGISTRATION_PRICE_KES
+from .cart import (
+    Cart,
+    DOMAIN_REGISTRATION_PRICE_KES,
+    normalize_domain_name,
+)
 from .currencies import kes_to_usd, usd_to_kes
 from .models import (
     Service,
@@ -364,18 +368,33 @@ def domains(request):
         category=Plan.Category.DOMAIN, is_active=True
     ).order_by("sort_order")
 
-    query = request.GET.get("domain", "").strip().lower()
+    query = request.GET.get("domain", "").strip()
     search_result = None
 
     if query:
-        clean = query.split(".")[0] if "." in query else query
-        search_result = {
-            "query": query,
-            "name": clean,
-            "available": True,
-            "suggested_tld": ".com",
-            "price_kes": DOMAIN_REGISTRATION_PRICE_KES,
-        }
+        normalized_domain = normalize_domain_name(query)
+        if normalized_domain:
+            matching_plan = next(
+                (
+                    plan
+                    for plan in sorted(tlds, key=lambda item: len(item.name), reverse=True)
+                    if normalized_domain.endswith(plan.name.lower())
+                    and normalized_domain[: -len(plan.name)]
+                ),
+                None,
+            )
+            matching_plan = matching_plan or next(
+                (plan for plan in tlds if plan.name.lower() == ".com"),
+                tlds[0] if tlds else None,
+            )
+            search_result = {
+                "query": normalized_domain,
+                "available": True,
+                "price_kes": DOMAIN_REGISTRATION_PRICE_KES,
+                "plan_id": matching_plan.id if matching_plan else None,
+            }
+        else:
+            messages.error(request, "Enter a valid domain name to search.")
 
     context = {
         "tlds": tlds,
@@ -393,8 +412,17 @@ def domains(request):
 def add_to_cart(request, plan_id):
     plan = get_object_or_404(Plan, id=plan_id, is_active=True)
     cart = Cart(request)
-    cart.add(plan)
-    messages.success(request, f"Added “{plan.name}” to your cart.")
+    domain = None
+    if plan.category == Plan.Category.DOMAIN:
+        domain = normalize_domain_name(request.POST.get("domain", ""))
+        if not domain:
+            messages.error(request, "Enter a valid domain name to register.")
+            return redirect("dashboard:domains")
+        cart.add(plan, domain=domain)
+        messages.success(request, f"Added “{domain}” to your cart.")
+    else:
+        cart.add(plan)
+        messages.success(request, f"Added “{plan.name}” to your cart.")
     return redirect("dashboard:cart")
 
 
@@ -470,6 +498,7 @@ def checkout(request):
                     "plan": plan,
                     "renews_on": renews_on,
                     "price": service_price,
+                    "domain": item["domain"],
                 })
 
             invoice_total_kes = (
@@ -494,7 +523,7 @@ def checkout(request):
                     owner=request.user,
                     invoice=invoice,
                     kind=_service_kind_for_plan(plan),
-                    name=plan.name,
+                    name=spec["domain"] or plan.name,
                     status=Service.Status.PENDING,
                     renews_on=spec["renews_on"],
                     price=spec["price"],

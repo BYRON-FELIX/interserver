@@ -46,7 +46,13 @@
                     <div class="sr-price">Registration: KSh {{ search_result.price_kes|floatformat:0 }} / year</div>
                 {% endif %}
                 {% if search_result.available %}
-                    <button class="btn-primary">Register Now</button>
+                    {% if search_result.plan_id %}
+                        <form method="post" action="{% url 'dashboard:add_to_cart' search_result.plan_id %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="domain" value="{{ search_result.query }}">
+                            <button type="submit" class="btn-primary">Register Now</button>
+                        </form>
+                    {% endif %}
                 {% endif %}
             </div>
         {% endif %}

@@ -41,7 +41,7 @@ urlpatterns = [
     # Cart / checkout / billing
     path("cart/", views.view_cart, name="cart"),
     path("cart/add/<int:plan_id>/", views.add_to_cart, name="add_to_cart"),
-    path("cart/remove/<int:plan_id>/", views.remove_from_cart, name="remove_from_cart"),
+    path("cart/remove/<str:plan_id>/", views.remove_from_cart, name="remove_from_cart"),
     path("checkout/", views.checkout, name="checkout"),
     path("billing/", views.invoice_list, name="invoice_list"),
     path(

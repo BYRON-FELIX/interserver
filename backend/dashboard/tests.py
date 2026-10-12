@@ -4,7 +4,7 @@ from unittest.mock import patch
 from django.contrib.auth.models import User
 from django.test import SimpleTestCase, TestCase, override_settings
 
-from .models import Invoice, Plan
+from .models import Invoice, Plan, Service
 from .payhero import PayHeroClient
 
 
@@ -104,3 +104,48 @@ class DomainStoreTests(TestCase):
         invoice = Invoice.objects.get(owner=user)
         self.assertEqual(invoice.kes_amount, Decimal("1500.00"))
         self.assertEqual(invoice.amount, Decimal("11.54"))
+
+    def test_register_button_runs_domain_through_checkout_to_payment(self):
+        user = User.objects.create_user(
+            username="domain-flow-customer",
+            password="test-password",
+        )
+        self.client.force_login(user)
+
+        search_response = self.client.get("/domains/", {"domain": "example.co.ke"})
+        self.assertContains(search_response, "name=\"domain\" value=\"example.co.ke\"")
+        self.assertContains(
+            search_response,
+            f'action="/cart/add/{self.plan.id}/"',
+        )
+
+        add_response = self.client.post(
+            f"/cart/add/{self.plan.id}/",
+            {"domain": "example.co.ke"},
+        )
+        self.assertRedirects(add_response, "/cart/")
+        cart_response = self.client.get("/cart/")
+        self.assertContains(cart_response, "example.co.ke")
+        self.assertContains(cart_response, "KSh 1500.00")
+
+        with patch("dashboard.views.kes_to_usd", return_value=Decimal("11.54")):
+            checkout_response = self.client.post("/checkout/")
+        invoice = Invoice.objects.get(owner=user)
+        service = Service.objects.get(invoice=invoice)
+        self.assertEqual(checkout_response.url, f"/billing/invoice/{invoice.id}/")
+        self.assertEqual(service.name, "example.co.ke")
+        self.assertContains(
+            self.client.get(checkout_response.url),
+            f"/billing/invoice/{invoice.id}/pay/",
+        )
+
+        with patch(
+            "dashboard.views.PayHeroClient.stk_push",
+            return_value={"success": True},
+        ) as stk_push:
+            pay_response = self.client.post(
+                f"/billing/invoice/{invoice.id}/pay/",
+                {"phone": "0712345678"},
+            )
+        self.assertEqual(pay_response.status_code, 302)
+        stk_push.assert_called_once()

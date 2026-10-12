@@ -32,7 +32,7 @@
                     <div class="cart-row">
                         <div class="cart-row-main">
                             <div class="cart-kind">{{ item.plan.get_category_display }}</div>
-                            <div class="cart-name">{{ item.plan.name }}</div>
+                            <div class="cart-name">{{ item.display_name }}</div>
                             <div class="cart-tagline">{{ item.plan.tagline }}</div>
                         </div>
 
@@ -42,7 +42,7 @@
                         </div>
 
                         <form method="post"
-                              action="{% url 'dashboard:remove_from_cart' item.plan.id %}"
+                              action="{% url 'dashboard:remove_from_cart' item.cart_key %}"
                               class="cart-row-remove">
                             {% csrf_token %}
                             <button type="submit" class="btn-remove" title="Remove">✕</button>

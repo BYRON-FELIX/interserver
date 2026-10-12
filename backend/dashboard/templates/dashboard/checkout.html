@@ -28,7 +28,7 @@
                         <div class="cart-tagline">{{ item.plan.tagline }}</div>
                     </div>
                     <div class="cart-row-price">
-                        <div class="cart-unit">${{ item.plan.price|floatformat:2 }}</div>
+                        <div class="cart-unit">KSh {{ item.unit_price_kes|floatformat:2 }}</div>
                         <div class="cart-period">/{{ item.period }}</div>
                     </div>
                 </div>
@@ -44,8 +44,8 @@
                 </div>
 
                 <div class="summary-line summary-total">
-                    <span>Total due</span>
-                    <span>${{ cart_total|floatformat:2 }}</span>
+                    <span>Total due (KES)</span>
+                    <span>KSh {{ cart_total_kes|floatformat:2 }}</span>
                 </div>
 
                 <form method="post" action="{% url 'dashboard:checkout' %}">

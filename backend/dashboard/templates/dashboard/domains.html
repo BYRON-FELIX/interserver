@@ -43,6 +43,9 @@
                     {% endif %}
                 </div>
                 {% if search_result.available %}
+                    <div class="sr-price">Registration: KSh {{ search_result.price_kes|floatformat:0 }} / year</div>
+                {% endif %}
+                {% if search_result.available %}
                     <button class="btn-primary">Register Now</button>
                 {% endif %}
             </div>
@@ -62,8 +65,8 @@
                 <div class="tld-card {% if plan.is_featured %}tld-featured{% endif %}">
                     <div class="tld-name">{{ plan.name }}</div>
                     <div class="tld-price">
-                        <span class="tld-amount">${{ plan.price|floatformat:2 }}</span>
-                        <span class="tld-period">/{{ plan.get_billing_period_display|lower }}</span>
+                        <span class="tld-amount">KSh {{ domain_registration_price_kes|floatformat:0 }}</span>
+                        <span class="tld-period">/year</span>
                     </div>
                     <div class="tld-tagline">{{ plan.tagline }}</div>
                     <a href="#search" class="tld-cta">Search</a>

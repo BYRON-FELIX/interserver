@@ -99,7 +99,7 @@
                     <h2 class="detail-card-title">Billing</h2>
                     <div class="summary-line">
                         <span>Renewal price</span>
-                        <span>${{ service.price|floatformat:2 }}</span>
+                        <span>KSh {{ renewal_price_kes|floatformat:2 }} / year</span>
                     </div>
                     {% if service.renews_on %}
                     <div class="summary-line">

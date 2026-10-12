@@ -17,8 +17,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 
-from .cart import Cart
-from .currencies import usd_to_kes
+from .cart import Cart, DOMAIN_REGISTRATION_PRICE_KES
+from .currencies import kes_to_usd, usd_to_kes
 from .models import (
     Service,
     Invoice,
@@ -157,13 +157,16 @@ def service_detail(request, service_id):
         if service.kind == Service.Kind.DOMAIN
         else 0
     )
+    context = {
+        "service": service,
+        "dns_count": dns_count,
+    }
+    if service.kind == Service.Kind.DOMAIN:
+        context["renewal_price_kes"] = DOMAIN_REGISTRATION_PRICE_KES
     return render(
         request,
         template,
-        {
-            "service": service,
-            "dns_count": dns_count,
-        },
+        context,
     )
 
 
@@ -361,25 +364,23 @@ def domains(request):
         category=Plan.Category.DOMAIN, is_active=True
     ).order_by("sort_order")
 
-    # Handle simple availability check (mock for now)
     query = request.GET.get("domain", "").strip().lower()
     search_result = None
 
     if query:
-        # Mock availability: any name containing "taken" or shorter than 4 chars
-        # is considered unavailable. Everything else is available.
         clean = query.split(".")[0] if "." in query else query
-        is_available = len(clean) >= 4 and "taken" not in clean
         search_result = {
             "query": query,
             "name": clean,
-            "available": is_available,
+            "available": True,
             "suggested_tld": ".com",
+            "price_kes": DOMAIN_REGISTRATION_PRICE_KES,
         }
 
     context = {
         "tlds": tlds,
         "search_result": search_result,
+        "domain_registration_price_kes": DOMAIN_REGISTRATION_PRICE_KES,
     }
     return render(request, "dashboard/domains.html", context)
 
@@ -401,7 +402,7 @@ def view_cart(request):
     cart = Cart(request)
     return render(request, "dashboard/cart.html", {
         "cart_items": cart.items(),
-        "cart_total": cart.total(),
+        "cart_total_kes": cart.total_kes(),
     })
 
 
@@ -435,6 +436,8 @@ def checkout(request):
             today = timezone.now().date()
 
             invoice_total_usd = Decimal("0.00")
+            non_domain_total_usd = Decimal("0.00")
+            domain_total_kes = Decimal("0.00")
             service_specs = []
 
             for item in items:
@@ -444,20 +447,42 @@ def checkout(request):
                     charge_now = plan.setup_fee
                     renews_on = today + timezone.timedelta(days=plan.trial_days)
                 else:
-                    charge_now = plan.price * item["quantity"]
                     renews_on = _renewal_date_for(plan)
+
+                if plan.category == Plan.Category.DOMAIN:
+                    domain_charge_kes = (
+                        DOMAIN_REGISTRATION_PRICE_KES * item["quantity"]
+                    )
+                    charge_now = kes_to_usd(domain_charge_kes)
+                    domain_total_kes += domain_charge_kes
+                    service_price = kes_to_usd(DOMAIN_REGISTRATION_PRICE_KES)
+                else:
+                    charge_now = (
+                        plan.setup_fee
+                        if plan.trial_days and plan.trial_days > 0
+                        else plan.price * item["quantity"]
+                    )
+                    non_domain_total_usd += charge_now
+                    service_price = plan.price
 
                 invoice_total_usd += charge_now
                 service_specs.append({
                     "plan": plan,
                     "renews_on": renews_on,
+                    "price": service_price,
                 })
+
+            invoice_total_kes = (
+                usd_to_kes(non_domain_total_usd)
+                if non_domain_total_usd
+                else Decimal("0.00")
+            ) + domain_total_kes
 
             invoice = Invoice.objects.create(
                 owner=request.user,
                 number=_next_invoice_number(),
                 amount=invoice_total_usd,
-                kes_amount=usd_to_kes(invoice_total_usd),
+                kes_amount=invoice_total_kes,
                 status=Invoice.Status.UNPAID,
                 issued_on=today,
                 due_on=today + timezone.timedelta(days=7),
@@ -472,7 +497,7 @@ def checkout(request):
                     name=plan.name,
                     status=Service.Status.PENDING,
                     renews_on=spec["renews_on"],
-                    price=plan.price,
+                    price=spec["price"],
                 )
 
                 if plan.category == Plan.Category.VPS:
@@ -505,7 +530,7 @@ def checkout(request):
 
     return render(request, "dashboard/checkout.html", {
         "cart_items": items,
-        "cart_total": cart.total(),
+        "cart_total_kes": cart.total_kes(),
     })
 
 

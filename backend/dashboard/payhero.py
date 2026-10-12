@@ -3,7 +3,7 @@ PayHero v2 Developer API client.
 
 Auth: HTTP Basic Auth (base64-encoded username:password), sent as
       Authorization: Basic <token>
-Endpoint: POST /api/v2/payments
+Endpoint: POST /api/v2/payments/initiate-stk-push
 Payload: amount, phone_number, channel_id, provider, external_reference
 
 Public API:
@@ -12,7 +12,6 @@ Public API:
         amount_kes=Decimal("3500"),
         phone="254712345678",
         reference="INV-2026-0001",
-        callback_url="https://yourdomain.com/payments/payhero/callback/",
     )
 """
 
@@ -32,7 +31,7 @@ class PayHeroError(Exception):
 class PayHeroClient:
     def __init__(self):
         self.api_url = getattr(settings, "PAYHERO_API_URL", "") or ""
-        self.basic_auth = getattr(settings, "PAYHERO_BASIC_AUTH", "") or ""
+        self.auth_token = getattr(settings, "PAYHERO_AUTH_TOKEN", "") or ""
         self.channel_id = getattr(settings, "PAYHERO_CHANNEL_ID", "") or ""
 
     @staticmethod
@@ -58,7 +57,6 @@ class PayHeroClient:
         phone: str,
         reference: str,
         description: str = "",
-        callback_url: str = "",
     ) -> dict:
         """
         Initiate an STK push via the v2 Developer API.
@@ -71,8 +69,8 @@ class PayHeroClient:
         if amount <= 0:
             return {"success": False, "error": "Amount must be greater than zero"}
 
-        if not self.basic_auth:
-            return {"success": False, "error": "PAYHERO_BASIC_AUTH is not configured"}
+        if not self.auth_token:
+            return {"success": False, "error": "PAYHERO_AUTH_TOKEN is not configured"}
         if not self.channel_id:
             return {"success": False, "error": "PAYHERO_CHANNEL_ID is not configured"}
 
@@ -80,8 +78,13 @@ class PayHeroClient:
         if len(phone) != 12:
             return {"success": False, "error": f"Invalid phone number format: {phone}"}
 
+        auth_token = self.auth_token.strip()
         headers = {
-            "Authorization": self.basic_auth,
+            "Authorization": (
+                auth_token
+                if auth_token.lower().startswith("basic ")
+                else f"Basic {auth_token}"
+            ),
             "Content-Type": "application/json",
         }
 
@@ -92,8 +95,6 @@ class PayHeroClient:
             "provider": "m-pesa",
             "external_reference": reference,
         }
-        if callback_url:
-            payload["callback_url"] = callback_url
 
         try:
             resp = requests.post(

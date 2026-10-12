@@ -24,9 +24,7 @@ services:
         fromDatabase:
           name: interserver-db
           property: connectionString
-      - key: PAYHERO_API_URL
-        value: "https://backend.payhero.co.ke/api/v2/payments"
-      - key: PAYHERO_BASIC_AUTH
+      - key: PAYHERO_AUTH_TOKEN
         sync: false
       - key: PAYHERO_CHANNEL_ID
         sync: false
